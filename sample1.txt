@@ -1,0 +1,2 @@
+Rabin Karp is a string matching algorithm that uses a rolling hash function to find patterns in a text string.
+It is highly effective for multiple pattern matching. The time complexity in the best case is linear, but worst case is quadratic.

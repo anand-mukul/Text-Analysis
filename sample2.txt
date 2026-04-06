@@ -1,0 +1,2 @@
+The Rabin-Karp algorithm is a popular string matching algorithm used widely. It uses a rolling hash to quickly find patterns.
+It can be used for plagiarism detection and multiple pattern matching tasks. Worst case time complexity can be quadratic due to collisions.
