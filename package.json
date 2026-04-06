@@ -4,6 +4,7 @@
   "description": "API Gateway for C++ Engine",
   "main": "server.js",
   "scripts": {
+    "build": "g++ main.cpp utils.cpp file_handler.cpp rabin_karp.cpp naive.cpp -o text_analysis",
     "start": "node server.js"
   },
   "dependencies": {
