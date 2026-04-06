@@ -1,4 +1,4 @@
-# 🔍 Intelligent Text Analysis System
+# Intelligent Text Analysis System
 ### High-Performance Rabin-Karp String Matching Engine with a Web UI
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -12,17 +12,17 @@ Created as a comprehensive demonstration of algorithmic efficiency versus standa
 
 ---
 
-## ✨ Core Features
+## Core Features
 
-*   **⚡ Rabin-Karp Implementation:** O(n+m) average time complexity using a highly optimized sliding-window rolling hash.
-*   **📊 Interactive Benchmarking:** Real-time side-by-side performance benchmarking of the Rabin-Karp engine versus Native Naive searching.
-*   **📂 Plagiarism Detection:** Checks local document similarity percentages via structural text tokenization and aggregated hash matching.
-*   **🔍 Bulk Pattern Matching:** Deploy multiple simultaneous substring targets against a massive corpus payload concurrently.
-*   **🖥️ Dashboard GUI:** Deep dark mode aesthetic (GitHub/Vercel inspired) with live multi-step execution visualization.
+*   **Rabin-Karp Implementation:** O(n+m) average time complexity using a highly optimized sliding-window rolling hash.
+*   **Interactive Benchmarking:** Real-time side-by-side performance benchmarking of the Rabin-Karp engine versus Native Naive searching.
+*   **Plagiarism Detection:** Checks local document similarity percentages via structural text tokenization and aggregated hash matching.
+*   **Bulk Pattern Matching:** Deploy multiple simultaneous substring targets against a massive corpus payload concurrently.
+*   **Dashboard GUI:** Deep dark mode aesthetic (GitHub/Vercel inspired) with live multi-step execution visualization.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 1. **C++ Engine (`/main.cpp`, `/rabin_karp.cpp`):** The core intelligence. Responsible for mathematically generating the rolling hash offsets, validating collisions, and outputting JSON stringified vectors via stdout.
 2. **API Gateway (`server.js`):** An Express.js node server that spawns the compiled C++ executable, feeds payloads via raw STDIN arguments, and manages cross-communication bridges.
@@ -30,7 +30,7 @@ Created as a comprehensive demonstration of algorithmic efficiency versus standa
 
 ---
 
-## 🚀 Installation & Usage
+## Installation & Usage
 
 ### Prerequisites
 *   [Node.js](https://nodejs.org/en/) (v16.0+)
@@ -59,7 +59,7 @@ Navigate to `http://localhost:3000` in your web browser to access the finalized 
 
 ---
 
-## 🧮 Algorithmic Complexity: Rabin-Karp
+## Algorithmic Complexity: Rabin-Karp
 
 The Rabin-Karp algorithm calculates a hash value for the pattern, and for each overlapping window of the text.
 
@@ -73,7 +73,7 @@ Instead of recomputing the full hash for every structural window iteratively, we
 
 ---
 
-## 👥 Authors & Academic Context
+## Authors & Academic Context
 Built meticulously for Advanced Design and Analysis of Algorithms (DAA) submissions as a demonstration of implementing advanced search heuristics into a modern full-stack ecosystem.
 
 *   *Modular logic cleanly abstracted with ZERO external C++ dependencies.*
