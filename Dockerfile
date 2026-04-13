@@ -11,7 +11,7 @@ COPY main.cpp rabin_karp.cpp rabin_karp.h naive.cpp naive.h file_handler.cpp fil
 RUN make
 
 # Stage 2: Production runtime
-FROM node:18-slim
+FROM node:22-slim
 WORKDIR /app
 
 # Copy package files and install dependencies
