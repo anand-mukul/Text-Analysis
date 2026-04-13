@@ -67,6 +67,71 @@ int main(int argc, char* argv[]) {
             cout << "}\n";
             return 0;
         }
+        else if (mode == "plagiarism-detailed" && argc == 4) {
+            string f1 = argv[2];
+            string f2 = argv[3];
+            DetailedPlagiarismResult result = FileHandler::calculateDetailedPlagiarism(f1, f2);
+
+            cout << "{";
+            cout << "\"similarity\":" << fixed << setprecision(2) << result.similarity << ",";
+            cout << "\"warning\":" << (result.warning ? "true" : "false") << ",";
+            cout << "\"totalWords\":" << result.totalWords << ",";
+            cout << "\"matchedWords\":" << result.matchedWords << ",";
+            cout << "\"wordMatches\":[";
+            for (size_t i = 0; i < result.wordMatches.size(); i++) {
+                const auto& wm = result.wordMatches[i];
+                cout << "{";
+                cout << "\"word\":\"" << escapeJson(wm.word) << "\",";
+                cout << "\"matched\":" << (wm.matched ? "true" : "false") << ",";
+                cout << "\"srcPos\":[";
+                for (size_t j = 0; j < wm.positionsInSource.size(); j++) {
+                    cout << wm.positionsInSource[j] << (j < wm.positionsInSource.size() - 1 ? "," : "");
+                }
+                cout << "],";
+                cout << "\"tgtPos\":[";
+                for (size_t j = 0; j < wm.positionsInTarget.size(); j++) {
+                    cout << wm.positionsInTarget[j] << (j < wm.positionsInTarget.size() - 1 ? "," : "");
+                }
+                cout << "]";
+                cout << "}" << (i < result.wordMatches.size() - 1 ? "," : "");
+            }
+            cout << "]";
+            cout << "}\n";
+            return 0;
+        }
+        else if (mode == "plagiarism-text" && argc == 4) {
+            // Direct text-to-text plagiarism (for uploaded file content passed via stdin/args)
+            string text1 = argv[2];
+            string text2 = argv[3];
+            DetailedPlagiarismResult result = FileHandler::calculateDetailedPlagiarismFromText(text1, text2);
+
+            cout << "{";
+            cout << "\"similarity\":" << fixed << setprecision(2) << result.similarity << ",";
+            cout << "\"warning\":" << (result.warning ? "true" : "false") << ",";
+            cout << "\"totalWords\":" << result.totalWords << ",";
+            cout << "\"matchedWords\":" << result.matchedWords << ",";
+            cout << "\"wordMatches\":[";
+            for (size_t i = 0; i < result.wordMatches.size(); i++) {
+                const auto& wm = result.wordMatches[i];
+                cout << "{";
+                cout << "\"word\":\"" << escapeJson(wm.word) << "\",";
+                cout << "\"matched\":" << (wm.matched ? "true" : "false") << ",";
+                cout << "\"srcPos\":[";
+                for (size_t j = 0; j < wm.positionsInSource.size(); j++) {
+                    cout << wm.positionsInSource[j] << (j < wm.positionsInSource.size() - 1 ? "," : "");
+                }
+                cout << "],";
+                cout << "\"tgtPos\":[";
+                for (size_t j = 0; j < wm.positionsInTarget.size(); j++) {
+                    cout << wm.positionsInTarget[j] << (j < wm.positionsInTarget.size() - 1 ? "," : "");
+                }
+                cout << "]";
+                cout << "}" << (i < result.wordMatches.size() - 1 ? "," : "");
+            }
+            cout << "]";
+            cout << "}\n";
+            return 0;
+        }
         else if (mode == "compare" && argc == 4) {
              string text = toLowerCase(argv[2]);
              string pattern = toLowerCase(argv[3]);

@@ -1,0 +1,105 @@
+name: Build, Test & Deploy TextForge
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Compile C++ engine
+        run: |
+          g++ -Wall -Wextra -std=c++11 -O2 -o text_analysis \
+            main.cpp rabin_karp.cpp naive.cpp file_handler.cpp utils.cpp
+
+      - name: Verify engine binary
+        run: |
+          chmod +x ./text_analysis
+          echo "Testing search mode..."
+          ./text_analysis search "hello world hello" "hello"
+          echo "Testing compare mode..."
+          ./text_analysis compare "abcabcabc" "abc"
+          echo "Testing multi mode..."
+          ./text_analysis multi "the quick brown fox" "quick" "fox"
+          echo "Testing plagiarism mode..."
+          ./text_analysis plagiarism sample1.txt sample2.txt
+          echo "Testing plagiarism-detailed mode..."
+          ./text_analysis plagiarism-detailed sample1.txt sample2.txt
+          echo "All engine tests passed ✓"
+
+      - name: Start server and test endpoints
+        run: |
+          node server.js &
+          SERVER_PID=$!
+          sleep 3
+
+          echo "Testing health endpoint..."
+          curl -sf http://localhost:3000/health | jq .
+
+          echo "Testing search API..."
+          curl -sf -X POST http://localhost:3000/api/search \
+            -H "Content-Type: application/json" \
+            -d '{"text":"hello world hello","pattern":"hello"}' | jq .
+
+          echo "Testing compare API..."
+          curl -sf -X POST http://localhost:3000/api/compare \
+            -H "Content-Type: application/json" \
+            -d '{"text":"abcabc","pattern":"abc"}' | jq .
+
+          echo "Testing plagiarism API..."
+          curl -sf -X POST http://localhost:3000/api/plagiarism \
+            -H "Content-Type: application/json" \
+            -d '{"file1":"sample1.txt","file2":"sample2.txt"}' | jq .
+
+          echo "Testing multi API..."
+          curl -sf -X POST http://localhost:3000/api/multi \
+            -H "Content-Type: application/json" \
+            -d '{"text":"hello world","patterns":["hello","world"]}' | jq .
+
+          echo "All API tests passed ✓"
+          kill $SERVER_PID
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: textforge:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker container
+        run: |
+          docker run -d --name textforge-test -p 3000:3000 textforge:latest
+          sleep 5
+          curl -sf http://localhost:3000/health | jq .
+          echo "Docker container health check passed ✓"
+          docker stop textforge-test
+          docker rm textforge-test

@@ -1,45 +1,108 @@
+/* ============================================
+   TextForge — Frontend Application Logic
+   Silicon Valley SaaS-grade interactions
+   ============================================ */
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function runMultistepLoader(container, stepsText) {
+// Animated counter for metric values
+function animateValue(el, start, end, duration = 600) {
+    const range = end - start;
+    const startTime = performance.now();
+    const isFloat = String(end).includes('.');
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // easeOutExpo
+        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const current = start + range * eased;
+        el.textContent = isFloat ? current.toFixed(3) : Math.round(current).toLocaleString();
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+
+// Terminal-style multistep loader with spinner
+async function runSimpleLoader(container, stepsText) {
     container.innerHTML = `<div class="card"><div class="step-loader"></div></div>`;
     const loaderDiv = container.querySelector('.step-loader');
-    
+
     stepsText.forEach((stepText, i) => {
         const d = document.createElement('div');
-        d.className = `step-item hidden`; // completely hidden initially except we will manage them
+        d.className = 'step';
         d.id = `step-${i}`;
-        d.innerHTML = `
-            <svg class="spinner-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span style="font-weight:500;">${stepText}</span>
-        `;
+        d.textContent = stepText;
         loaderDiv.appendChild(d);
     });
 
     for (let i = 0; i < stepsText.length; i++) {
         const cur = loaderDiv.querySelector(`#step-${i}`);
-        cur.classList.remove('hidden');
         cur.classList.add('active');
-        
-        await sleep(350); 
-        
+        await sleep(300 + Math.random() * 250);
         cur.classList.remove('active');
         cur.classList.add('done');
-        cur.querySelector('svg').outerHTML = `
-            <svg style="width:1.25rem; height:1.25rem;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
-        `;
     }
+}
+
+// Highlight matched words
+function highlightText(text, matchedWords) {
+    if (!matchedWords || matchedWords.length === 0) return escapeHtml(text);
+
+    const matchSet = new Set();
+    const missSet = new Set();
+    matchedWords.forEach(wm => {
+        if (wm.matched) matchSet.add(wm.word.toLowerCase());
+        else missSet.add(wm.word.toLowerCase());
+    });
+
+    return text.replace(/(\S+)/g, (match) => {
+        const clean = match.replace(/[^\w]/g, '').toLowerCase();
+        if (clean.length < 3) return escapeHtml(match);
+        if (matchSet.has(clean)) return `<span class="hl-match">${escapeHtml(match)}</span>`;
+        if (missSet.has(clean)) return `<span class="hl-miss">${escapeHtml(match)}</span>`;
+        return escapeHtml(match);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Set button loading state
+function setBtnLoading(btn, loading, originalText) {
+    if (loading) {
+        btn._originalHTML = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> Processing...`;
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = btn._originalHTML || originalText;
+        btn.disabled = false;
+    }
+}
+
+// Render an error
+function renderError(container, message) {
+    container.innerHTML = `
+        <div class="error-card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            ${escapeHtml(message)}
+        </div>
+    `;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // ===== Navigation =====
     const navBtns = document.querySelectorAll('.nav-item');
     const sections = document.querySelectorAll('.view');
 
-    // UI Tab Navigation
     navBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             navBtns.forEach(b => b.classList.remove('active'));
@@ -49,13 +112,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Sample Data Injection Logic
+    // ===== Upload Mode Switcher =====
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const modeContainers = document.querySelectorAll('.upload-mode');
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            modeContainers.forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`${btn.dataset.mode}-mode`).classList.add('active');
+        });
+    });
+
+    // ===== Sample Data Injectors =====
     const sampleData = {
-        'search-text': `The Rabin-Karp algorithm is a string-searching algorithm developed by Michael O. Rabin and Richard M. Karp in 1987. It uses a rolling hash function to find an exact match of a pattern string in a text. While mostly highly efficient, overlapping string patterns and identical modulo remainders can cause the Rabin-Karp engine to execute hash comparisons vigorously.`,
+        'search-text': `The Rabin-Karp algorithm is a string-searching algorithm created by Richard M. Karp and Michael O. Rabin in 1987. It uses hashing to find an exact match of a pattern string in a text. It is particularly effective when searching for multiple patterns simultaneously, making it ideal for plagiarism detection and DNA sequence analysis.`,
         'search-pattern': 'Rabin-Karp',
-        'multi-text': `Computer software programming is the technical process of performing a particular computation. Programming fundamentally involves tasks such as systematic analysis, generating algorithms, profiling algorithms' systemic accuracy and resource consumption, and the rigorous implementation of those algorithms in a chosen programming language.`,
-        'multi-patterns': 'program, algorithm, process, logic, system',
-        'comp-text': `GATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACA`,
+        'multi-text': `Computer science is the study of computation, information, and automation. Programming involves tasks such as analysis, algorithm design, profiling resource consumption, and implementation. Modern software engineering leverages algorithms like hashing, searching, sorting, and graph traversal.`,
+        'multi-patterns': 'algorithm, programming, hashing, computation, sorting',
+        'comp-text': `GATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACAGATTACA`,
         'comp-pattern': 'GATTACA'
     };
 
@@ -65,28 +141,85 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetId = btn.getAttribute('data-target');
             const sampleKey = btn.getAttribute('data-sample');
             if (targetId && sampleData[sampleKey]) {
-                const targetElement = document.getElementById(targetId);
-                targetElement.value = sampleData[sampleKey];
-                // Flash animation purely for visual focus
-                targetElement.style.boxShadow = '0 0 0 3px var(--primary)';
-                targetElement.style.borderColor = 'var(--primary)';
+                const el = document.getElementById(targetId);
+                el.value = sampleData[sampleKey];
+                // Micro-feedback: brief glow
+                el.style.borderColor = 'var(--accent)';
+                el.style.boxShadow = '0 0 0 3px var(--accent-dim)';
                 setTimeout(() => {
-                    targetElement.style.boxShadow = '';
-                    targetElement.style.borderColor = '';
-                }, 300);
+                    el.style.borderColor = '';
+                    el.style.boxShadow = '';
+                }, 800);
             }
         });
     });
 
-    // Pattern Search
+    // ===== Dropzone Setup =====
+    function setupDropzone(zoneId, inputId, filenameId) {
+        const zone = document.getElementById(zoneId);
+        const input = document.getElementById(inputId);
+        const filename = document.getElementById(filenameId);
+
+        if (!zone) return;
+
+        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => { zone.classList.remove('dragover'); });
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                input.files = e.dataTransfer.files;
+                handleFileSelect(zone, input, filename);
+            }
+        });
+        input.addEventListener('change', () => handleFileSelect(zone, input, filename));
+    }
+
+    function handleFileSelect(zone, input, filename) {
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            zone.classList.add('has-file');
+            filename.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            checkUploadReady();
+        }
+    }
+
+    function checkUploadReady() {
+        const src = document.getElementById('file-source');
+        const tgt = document.getElementById('file-target');
+        const btn = document.getElementById('btn-upload-analyze');
+        btn.disabled = !(src.files.length > 0 && tgt.files.length > 0);
+    }
+
+    setupDropzone('dropzone-source', 'file-source', 'filename-source');
+    setupDropzone('dropzone-target', 'file-target', 'filename-target');
+
+    // ===== Health Check =====
+    async function checkEngine() {
+        const el = document.getElementById('engine-status');
+        try {
+            const res = await fetch('/health');
+            const data = await res.json();
+            if (data.status === 'healthy' && data.engine === 'available') {
+                el.innerHTML = `<div class="status-dot"></div><span>Engine Online</span>`;
+            } else {
+                el.innerHTML = `<div class="status-dot offline"></div><span>Engine Fault</span>`;
+            }
+        } catch (e) {
+            el.innerHTML = `<div class="status-dot offline"></div><span>Offline</span>`;
+        }
+    }
+    checkEngine();
+
+    // ===== Pattern Search =====
     document.getElementById('btn-search').addEventListener('click', async () => {
         const text = document.getElementById('search-text').value;
         const pattern = document.getElementById('search-pattern').value;
-        if (!text || !pattern) { alert("Fields cannot be empty."); return; }
+        if (!text || !pattern) return;
 
         const btn = document.getElementById('btn-search');
-        btn.innerText = "Executing...";
-        btn.disabled = true;
+        setBtnLoading(btn, true);
 
         const resultsDiv = document.getElementById('search-results');
         resultsDiv.classList.remove('hidden');
@@ -97,58 +230,78 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ text, pattern })
         });
 
-        await runMultistepLoader(resultsDiv, [
-            "Allocating C++ memory buffers...",
-            "Calculating sliding Rabin-Karp hashes...",
-            "Validating strict collision bounds...",
-            "Aggregating spatial index metrics..."
+        await runSimpleLoader(resultsDiv, [
+            'Computing rolling hash window...',
+            'Scanning corpus for matches...',
+            'Verifying hash collisions...'
         ]);
 
         try {
             const response = await fetchPromise;
             const data = await response.json();
-            
-            if (data.error) {
-                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-            } else {
-                resultsDiv.innerHTML = `
-                    <div class="metric-grid" style="animation: fade 0.4s ease;">
-                        <div class="metric-card">
-                            <div class="metric-label">Matches</div>
-                            <div class="metric-value">${data.matches}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Execution Time</div>
-                            <div class="metric-value">${data.time}ms</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Hash Comparisons</div>
-                            <div class="metric-value">${data.comparisons}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Collisions</div>
-                            <div class="metric-value">${data.collisions}</div>
-                        </div>
+
+            if (data.error) throw new Error(data.error);
+
+            let highlighted = '';
+            let lastIdx = 0;
+            const positions = [...data.positions].sort((a, b) => a - b);
+
+            positions.forEach(pos => {
+                highlighted += escapeHtml(text.substring(lastIdx, pos));
+                highlighted += `<span class="hl-match">${escapeHtml(text.substring(pos, pos + pattern.length))}</span>`;
+                lastIdx = pos + pattern.length;
+            });
+            highlighted += escapeHtml(text.substring(lastIdx));
+
+            resultsDiv.innerHTML = `
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Matches Found</div>
+                        <div class="metric-value" data-count="${data.matches}">0</div>
                     </div>
-                `;
-            }
-        } catch(e) { resultsDiv.innerHTML = `<div class="alert alert-danger">Network error</div>`; }
-        btn.innerText = "Execute Search";
-        btn.disabled = false;
+                    <div class="metric-card">
+                        <div class="metric-label">Compute Time</div>
+                        <div class="metric-value">${data.time}<span style="font-size:0.7rem;color:var(--text-muted);margin-left:2px">ms</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Comparisons</div>
+                        <div class="metric-value" data-count="${data.comparisons}">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Hash Collisions</div>
+                        <div class="metric-value" data-count="${data.collisions}">0</div>
+                    </div>
+                </div>
+                ${data.matches > 0 ? `
+                <div class="doc-card" style="margin-top:1rem">
+                    <h3>Matches in Corpus</h3>
+                    <div class="highlighted-body">${highlighted}</div>
+                </div>` : ''}
+            `;
+
+            // Animate the counters
+            resultsDiv.querySelectorAll('[data-count]').forEach(el => {
+                animateValue(el, 0, parseInt(el.dataset.count, 10));
+            });
+
+        } catch (e) {
+            renderError(resultsDiv, e.message);
+        }
+
+        setBtnLoading(btn, false);
     });
 
-    // Bulk Search
+    // ===== Multi-Pattern Search =====
     document.getElementById('btn-multi').addEventListener('click', async () => {
         const text = document.getElementById('multi-text').value;
         const patternsStr = document.getElementById('multi-patterns').value;
         if (!text || !patternsStr) return;
 
         const patterns = patternsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        if (patterns.length === 0) return alert("Enter valid patterns");
+        if (patterns.length === 0) return;
 
         const btn = document.getElementById('btn-multi');
-        btn.innerText = "Running Bulk Match...";
-        btn.disabled = true;
+        setBtnLoading(btn, true);
 
         const resultsDiv = document.getElementById('multi-results');
         resultsDiv.classList.remove('hidden');
@@ -159,58 +312,76 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ text, patterns })
         });
 
-        await runMultistepLoader(resultsDiv, [
-            "Parsing bulk pattern payload...",
-            "Deploying concurrent substring analysis...",
-            "Resolving sequence spatial matrices..."
+        await runSimpleLoader(resultsDiv, [
+            'Parsing batch patterns...',
+            'Executing concurrent hash search...',
+            'Aggregating results...'
         ]);
 
         try {
             const response = await fetchPromise;
             const data = await response.json();
-            
-            if (data.error) {
-                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-            } else {
-                let tableRows = data.results.map(r => `
-                    <tr>
-                        <td><strong>${r.pattern}</strong></td>
-                        <td>${r.matches}</td>
-                        <td style="color:var(--text-secondary); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            ${r.positions.length > 0 ? r.positions.slice(0, 5).join(', ') + (r.positions.length > 5 ? '...' : '') : 'None'}
-                        </td>
-                    </tr>
-                `).join('');
 
-                resultsDiv.innerHTML = `
-                    <div class="table-container" style="animation: fade 0.4s ease;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Pattern Query</th>
-                                    <th>Total Matches</th>
-                                    <th>Relative Indices</th>
-                                </tr>
-                            </thead>
-                            <tbody>${tableRows}</tbody>
-                        </table>
+            if (data.error) throw new Error(data.error);
+
+            const totalHits = data.results.reduce((sum, r) => sum + r.matches, 0);
+
+            const rows = data.results.map(r => `
+                <tr>
+                    <td>
+                        <span style="font-family:var(--font-mono);font-size:0.76rem;background:var(--bg-hover);padding:0.15rem 0.45rem;border-radius:4px">${escapeHtml(r.pattern)}</span>
+                    </td>
+                    <td>
+                        <span style="font-variant-numeric:tabular-nums;font-weight:600;${r.matches > 0 ? 'color:var(--accent-light)' : 'color:var(--text-muted)'}">${r.matches}</span>
+                    </td>
+                    <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.72rem">
+                        ${r.positions.length > 0 ? r.positions.slice(0, 8).join(', ') + (r.positions.length > 8 ? ` <span style="color:var(--text-muted)">+${r.positions.length - 8} more</span>` : '') : '<span style="opacity:0.4">—</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            resultsDiv.innerHTML = `
+                <div class="metric-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1rem;">
+                    <div class="metric-card">
+                        <div class="metric-label">Patterns Searched</div>
+                        <div class="metric-value" data-count="${patterns.length}">0</div>
                     </div>
-                `;
-            }
-        } catch(e) { }
-        btn.innerText = "Run Bulk Search";
-        btn.disabled = false;
+                    <div class="metric-card">
+                        <div class="metric-label">Total Hits</div>
+                        <div class="metric-value" data-count="${totalHits}">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Hit Rate</div>
+                        <div class="metric-value">${((data.results.filter(r => r.matches > 0).length / patterns.length) * 100).toFixed(0)}<span style="font-size:0.7rem;color:var(--text-muted);margin-left:1px">%</span></div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead><tr><th>Pattern</th><th>Hits</th><th>Positions</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+
+            resultsDiv.querySelectorAll('[data-count]').forEach(el => {
+                animateValue(el, 0, parseInt(el.dataset.count, 10));
+            });
+
+        } catch (e) {
+            renderError(resultsDiv, e.message);
+        }
+
+        setBtnLoading(btn, false);
     });
 
-    // Benchmark Compare
+    // ===== Algorithm Compare =====
     document.getElementById('btn-compare').addEventListener('click', async () => {
         const text = document.getElementById('comp-text').value;
         const pattern = document.getElementById('comp-pattern').value;
         if (!text || !pattern) return;
 
         const btn = document.getElementById('btn-compare');
-        btn.innerText = "Benchmarking...";
-        btn.disabled = true;
+        setBtnLoading(btn, true);
 
         const resultsDiv = document.getElementById('comp-results');
         resultsDiv.classList.remove('hidden');
@@ -221,97 +392,219 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ text, pattern })
         });
 
-        await runMultistepLoader(resultsDiv, [
-            "Executing Naive string matching engine...",
-            "Executing rolling Rabin-Karp engine...",
-            "Calculating comparative execution limits..."
+        await runSimpleLoader(resultsDiv, [
+            'Initializing Naive brute-force engine...',
+            'Initializing Rabin-Karp hash engine...',
+            'Running benchmark comparison...'
         ]);
 
         try {
             const response = await fetchPromise;
             const data = await response.json();
-            
-            if (data.error) {
-                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-            } else {
-                resultsDiv.innerHTML = `
-                    <div class="table-container" style="animation: fade 0.4s ease;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Algorithm</th>
-                                    <th>Matches</th>
-                                    <th>Comparisons</th>
-                                    <th>Execution Time (ms)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Naive Search</td>
-                                    <td>${data.naive.matches}</td>
-                                    <td>${data.naive.comparisons}</td>
-                                    <td>${data.naive.time}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Rabin-Karp</strong></td>
-                                    <td>${data.rk.matches}</td>
-                                    <td>${data.rk.comparisons}</td>
-                                    <td>${data.rk.time}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+            if (data.error) throw new Error(data.error);
+
+            const maxTime = Math.max(data.naive.time, data.rk.time) || 0.001;
+            const naivePct = ((data.naive.time / maxTime) * 100).toFixed(0);
+            const rkPct = ((data.rk.time / maxTime) * 100).toFixed(0);
+
+            const speedup = data.naive.time > 0
+                ? (data.naive.comparisons / Math.max(data.rk.comparisons, 1)).toFixed(1)
+                : '—';
+
+            // Determine winner by fewer comparisons (more stable than sub-ms timing)
+            const rkWins = data.rk.comparisons <= data.naive.comparisons;
+            const winnerLabel = rkWins ? 'Rabin-Karp' : 'Naive';
+
+            resultsDiv.innerHTML = `
+                <div class="text-grid">
+                    <div class="card" style="position:relative;overflow:hidden;${!rkWins ? 'border-color:rgba(139,92,246,0.2)' : ''}">
+                        ${!rkWins ? '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-gradient)"></div>' : ''}
+                        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:${!rkWins ? 'var(--accent-light)' : 'var(--text-muted)'};margin-bottom:0.6rem;font-weight:600;display:flex;align-items:center;gap:0.4rem">
+                            Naive Search
+                            ${!rkWins ? '<span style="font-size:0.55rem;background:var(--accent-dim);padding:0.1rem 0.4rem;border-radius:4px;color:var(--accent-light)">WINNER</span>' : ''}
+                        </div>
+                        <div style="font-size:1.75rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;${!rkWins ? 'color:var(--accent-light)' : ''}">${data.naive.time}<span style="font-size:0.75rem;color:var(--text-muted);margin-left:3px">ms</span></div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.35rem;font-variant-numeric:tabular-nums">${data.naive.comparisons.toLocaleString()} comparisons</div>
                     </div>
-                `;
-            }
-        } catch(e) { }
-        btn.innerText = "Run Benchmark";
-        btn.disabled = false;
+                    <div class="card" style="position:relative;overflow:hidden;${rkWins ? 'border-color:rgba(139,92,246,0.2)' : ''}">
+                        ${rkWins ? '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-gradient)"></div>' : ''}
+                        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:${rkWins ? 'var(--accent-light)' : 'var(--text-muted)'};margin-bottom:0.6rem;font-weight:600;display:flex;align-items:center;gap:0.4rem">
+                            Rabin-Karp
+                            ${rkWins ? '<span style="font-size:0.55rem;background:var(--accent-dim);padding:0.1rem 0.4rem;border-radius:4px;color:var(--accent-light)">WINNER</span>' : ''}
+                        </div>
+                        <div style="font-size:1.75rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;${rkWins ? 'color:var(--accent-light)' : ''}">${data.rk.time}<span style="font-size:0.75rem;color:var(--text-muted);margin-left:3px">ms</span></div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.35rem;font-variant-numeric:tabular-nums">${data.rk.comparisons.toLocaleString()} comparisons</div>
+                    </div>
+                </div>
+
+                <div class="metric-grid" style="grid-template-columns:repeat(3,1fr);margin-top:1rem">
+                    <div class="metric-card">
+                        <div class="metric-label">Matches Found</div>
+                        <div class="metric-value" data-count="${data.rk.matches || data.naive.matches || 0}">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Comparison Ratio</div>
+                        <div class="metric-value">${speedup}<span style="font-size:0.65rem;color:var(--text-muted);margin-left:2px">×</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Corpus Length</div>
+                        <div class="metric-value" data-count="${text.length}">0</div>
+                    </div>
+                </div>
+
+                <div class="benchmark-bars">
+                    <div class="bar-row">
+                        <div class="bar-label-group"><span>Naive — Execution Time</span><span class="bar-value">${data.naive.time}ms</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+                    </div>
+                    <div class="bar-row">
+                        <div class="bar-label-group"><span>Rabin-Karp — Execution Time</span><span class="bar-value">${data.rk.time}ms</span></div>
+                        <div class="bar-track"><div class="bar-fill winner" style="width:0%"></div></div>
+                    </div>
+                </div>
+            `;
+
+            // Animate bars
+            requestAnimationFrame(() => {
+                const fills = resultsDiv.querySelectorAll('.bar-fill');
+                if (fills[0]) fills[0].style.width = naivePct + '%';
+                if (fills[1]) fills[1].style.width = rkPct + '%';
+            });
+
+            // Animate counters
+            resultsDiv.querySelectorAll('[data-count]').forEach(el => {
+                animateValue(el, 0, parseInt(el.dataset.count, 10));
+            });
+
+        } catch (e) {
+            renderError(resultsDiv, e.message);
+        }
+
+        setBtnLoading(btn, false);
     });
 
-    // Plagiarism Check
-    document.getElementById('btn-plag').addEventListener('click', async () => {
-        const file1 = document.getElementById('plag-file1').value;
-        const file2 = document.getElementById('plag-file2').value;
-        if (!file1 || !file2) return;
+    // ===== Detailed Plagiarism Renderer =====
+    function renderDetailedPlagiarismResults(container, data) {
+        const srcHighlighted = highlightText(data.sourceText || '', data.wordMatches || []);
+        const tgtHighlighted = highlightText(data.targetText || '', data.wordMatches || []);
 
-        const btn = document.getElementById('btn-plag');
-        btn.innerText = "Analyzing...";
-        btn.disabled = true;
+        const similarity = parseFloat(data.similarity) || 0;
+        const isWarning = data.warning;
 
-        const resultsDiv = document.getElementById('plag-results');
+        // Color the similarity ring
+        const ringColor = isWarning ? 'var(--danger)' : 'var(--success)';
+        const ringBg = isWarning ? 'var(--danger-bg)' : 'var(--success-bg)';
+
+        container.innerHTML = `
+            <div class="plag-summary">
+                <div class="stat-item" style="align-items:center">
+                    <div style="width:56px;height:56px;border-radius:50%;border:3px solid ${ringColor};display:flex;align-items:center;justify-content:center;background:${ringBg};margin-bottom:0.35rem">
+                        <span style="font-size:1rem;font-weight:700;color:${ringColor}">${Math.round(similarity)}%</span>
+                    </div>
+                    <span class="lbl">Similarity</span>
+                </div>
+                <div class="stat-item">
+                    <span class="val" style="font-size:0.82rem;display:flex;align-items:center;gap:0.4rem">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${ringColor};display:inline-block"></span>
+                        ${isWarning ? 'High Overlap Detected' : 'Within Acceptable Range'}
+                    </span>
+                    <span class="lbl" style="margin-top:0.25rem">Status</span>
+                </div>
+                <div class="stat-item">
+                    <span class="val">${data.totalWords}</span>
+                    <span class="lbl">Total Words</span>
+                </div>
+                <div class="stat-item">
+                    <span class="val ${isWarning ? 'danger' : 'success'}">${data.matchedWords}</span>
+                    <span class="lbl">Matched Words</span>
+                </div>
+            </div>
+
+            <div class="side-by-side">
+                <div class="doc-card">
+                    <h3>Source Document</h3>
+                    <div class="highlighted-body">${srcHighlighted}</div>
+                </div>
+                <div class="doc-card">
+                    <h3>Target Document</h3>
+                    <div class="highlighted-body">${tgtHighlighted}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ===== File Upload Plagiarism =====
+    document.getElementById('btn-upload-analyze').addEventListener('click', async () => {
+        const srcInput = document.getElementById('file-source');
+        const tgtInput = document.getElementById('file-target');
+        if (srcInput.files.length === 0 || tgtInput.files.length === 0) return;
+
+        const btn = document.getElementById('btn-upload-analyze');
+        setBtnLoading(btn, true);
+
+        const resultsDiv = document.getElementById('upload-results');
         resultsDiv.classList.remove('hidden');
 
-        const fetchPromise = fetch('/api/plagiarism', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file1, file2 })
-        });
+        const formData = new FormData();
+        formData.append('source', srcInput.files[0]);
+        formData.append('target', tgtInput.files[0]);
 
-        await runMultistepLoader(resultsDiv, [
-            "Retrieving local file contents...",
-            "Sanitizing strings and splitting lexical tokens...",
-            "Evaluating structural Rabin-Karp overlap...",
-            "Computing definitive similarity percentages..."
+        const fetchPromise = fetch('/api/plagiarism-upload', { method: 'POST', body: formData });
+
+        await runSimpleLoader(resultsDiv, [
+            'Ingesting uploaded documents...',
+            'Normalizing and tokenizing text...',
+            'Cross-referencing word hashes...',
+            'Computing similarity score...'
         ]);
 
         try {
             const response = await fetchPromise;
             const data = await response.json();
-            if (data.error) {
-                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-            } else {
-                resultsDiv.innerHTML = `
-                    <div class="card" style="display:flex; justify-content:space-between; align-items:center; animation: fade 0.4s ease;">
-                        <div>
-                            <div class="metric-label" style="margin-bottom:0.2rem">Structural Similarity</div>
-                            <div class="metric-value">${data.similarity}%</div>
-                        </div>
-                        ${data.warning ? '<div class="badge badge-danger">High Plagiarism Detected</div>' : '<div class="badge badge-success">Acceptable Margins</div>'}
-                    </div>
-                `;
-            }
-        } catch(e) { }
-        btn.innerText = "Analyze Documents";
-        btn.disabled = false;
+            if (data.error) throw new Error(data.error);
+            renderDetailedPlagiarismResults(resultsDiv, data);
+        } catch (e) {
+            renderError(resultsDiv, e.message);
+        }
+
+        setBtnLoading(btn, false);
     });
+
+    // ===== Text Paste Plagiarism =====
+    document.getElementById('btn-text-analyze').addEventListener('click', async () => {
+        const sourceText = document.getElementById('paste-source').value;
+        const targetText = document.getElementById('paste-target').value;
+        if (!sourceText || !targetText) return;
+
+        const btn = document.getElementById('btn-text-analyze');
+        setBtnLoading(btn, true);
+
+        const resultsDiv = document.getElementById('upload-results');
+        resultsDiv.classList.remove('hidden');
+
+        const fetchPromise = fetch('/api/plagiarism-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sourceText, targetText })
+        });
+
+        await runSimpleLoader(resultsDiv, [
+            'Normalizing text inputs...',
+            'Cross-referencing word hashes...',
+            'Computing similarity score...'
+        ]);
+
+        try {
+            const response = await fetchPromise;
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            renderDetailedPlagiarismResults(resultsDiv, data);
+        } catch (e) {
+            renderError(resultsDiv, e.message);
+        }
+
+        setBtnLoading(btn, false);
+    });
+
 });

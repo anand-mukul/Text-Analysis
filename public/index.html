@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Analysis System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>TextForge — AI-Powered Text Analysis Engine</title>
+    <meta name="description" content="TextForge is a high-performance text analysis engine powered by the Rabin-Karp algorithm. Perform pattern searches, plagiarism detection, and algorithm benchmarks with sub-millisecond precision.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,137 +15,224 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <h2>Text Analysis</h2>
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 17 10 11 4 5"></polyline>
+                        <line x1="12" y1="19" x2="20" y2="19"></line>
+                    </svg>
+                </div>
+                <span class="logo-text">TextForge</span>
+                <span class="logo-badge">v2</span>
             </div>
+
             <nav class="nav-menu">
-                <button class="nav-item active" data-target="search-view">Pattern Search</button>
-                <button class="nav-item" data-target="multi-view">Bulk Pattern Match</button>
-                <button class="nav-item" data-target="plagiarism-view">Plagiarism Check</button>
-                <button class="nav-item" data-target="compare-view">Algorithm Compare</button>
+                <div class="nav-section-label">Engine</div>
+                <button class="nav-item active" data-target="search-view" id="nav-search">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Pattern Search
+                </button>
+                <button class="nav-item" data-target="multi-view" id="nav-multi">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Multi-Pattern
+                </button>
+                
+                <div class="nav-section-label">Analysis</div>
+                <button class="nav-item" data-target="upload-view" id="nav-upload">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    Plagiarism Intel
+                </button>
+                <button class="nav-item" data-target="compare-view" id="nav-compare">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Benchmarks
+                </button>
             </nav>
+
+            <div class="sidebar-footer">
+                <div class="engine-status" id="engine-status">
+                    <div class="status-dot"></div>
+                    <span>Initializing...</span>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Search View -->
+            <!-- Pattern Search View -->
             <section id="search-view" class="view active">
                 <header class="section-header">
                     <h1>Pattern Search</h1>
-                    <p>Detect exact substrings using the Rabin-Karp engine.</p>
+                    <p>Detect exact substrings using a rolling hash with O(n+m) average complexity.</p>
                 </header>
                 <div class="card">
                     <div class="form-group">
                         <label>
-                            <span>Target Corpus Text</span>
-                            <button type="button" class="btn-sample" data-target="search-text" data-sample="search-text" title="Insert Demonstration Text">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Corpus Text</span>
+                            <button type="button" class="btn-sample" data-target="search-text" data-sample="search-text">Load Sample</button>
                         </label>
-                        <textarea id="search-text" placeholder="Enter text here..."></textarea>
+                        <textarea id="search-text" placeholder="Paste or type the text corpus to search through..." rows="6"></textarea>
                     </div>
                     <div class="form-group">
                         <label>
-                            <span>Pattern</span>
-                            <button type="button" class="btn-sample" data-target="search-pattern" data-sample="search-pattern" title="Insert Target Substring">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Target Pattern</span>
                         </label>
-                        <input type="text" id="search-pattern" placeholder="Keyword to search...">
+                        <input type="text" id="search-pattern" placeholder="Enter the exact sequence to find...">
                     </div>
                     <div class="actions">
-                        <button id="btn-search" class="btn primary">Execute Search</button>
+                        <button id="btn-search" class="btn primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Run Search
+                        </button>
                     </div>
                 </div>
                 <div id="search-results" class="results-area hidden"></div>
             </section>
 
-            <!-- Multi Search View -->
+            <!-- Multi-Pattern Search View -->
             <section id="multi-view" class="view">
                 <header class="section-header">
-                    <h1>Bulk Pattern Match</h1>
-                    <p>Execute multiple pattern searches across a unified text corpus payload simultaneously.</p>
+                    <h1>Multi-Pattern Search</h1>
+                    <p>Execute simultaneous pattern searches across a unified text corpus.</p>
                 </header>
                 <div class="card">
                     <div class="form-group">
                         <label>
-                            <span>Target Corpus Text</span>
-                            <button type="button" class="btn-sample" data-target="multi-text" data-sample="multi-text" title="Insert Demonstration Text">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Corpus Text</span>
+                            <button type="button" class="btn-sample" data-target="multi-text" data-sample="multi-text">Load Sample</button>
                         </label>
-                        <textarea id="multi-text" placeholder="Enter unified text here..."></textarea>
+                        <textarea id="multi-text" placeholder="Paste or type the text corpus to search through..." rows="6"></textarea>
                     </div>
                     <div class="form-group">
                         <label>
-                            <span>Patterns (Comma Separated)</span>
-                            <button type="button" class="btn-sample" data-target="multi-patterns" data-sample="multi-patterns" title="Insert Demonstration Targets">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Target Patterns</span>
                         </label>
-                        <input type="text" id="multi-patterns" placeholder="e.g. testing, string, matching, algorithm">
+                        <input type="text" id="multi-patterns" placeholder="Comma-separated patterns (e.g. hash, tree, algorithm)">
                     </div>
                     <div class="actions">
-                        <button id="btn-multi" class="btn primary">Run Bulk Search</button>
+                        <button id="btn-multi" class="btn primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Run Bulk Search
+                        </button>
                     </div>
                 </div>
                 <div id="multi-results" class="results-area hidden"></div>
             </section>
 
             <!-- Plagiarism View -->
-            <section id="plagiarism-view" class="view">
+            <section id="upload-view" class="view">
                 <header class="section-header">
-                    <h1>Plagiarism Check</h1>
-                    <p>Analyze structural similarity mapping between two distinct documents.</p>
+                    <h1>Plagiarism Intel</h1>
+                    <p>Analyze structural similarities between documents via word-level hashing and cross-reference verification.</p>
                 </header>
-                <div class="card">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>
-                                <span>Source Document Path</span>
-                            </label>
-                            <input type="text" id="plag-file1" value="sample1.txt">
+
+                <div class="upload-mode-switcher">
+                    <button class="mode-btn active" data-mode="file" id="mode-file">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        File Upload
+                    </button>
+                    <button class="mode-btn" data-mode="text" id="mode-text">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                        Raw Text
+                    </button>
+                </div>
+
+                <!-- File Upload Mode -->
+                <div id="file-mode" class="upload-mode active">
+                    <div class="dropzone-grid">
+                        <div class="dropzone" id="dropzone-source">
+                            <input type="file" id="file-source" accept=".txt,.md,.text,.csv,.log,.py,.js,.cpp,.java,.c,.h,.html,.css,.pdf" hidden>
+                            <div class="dropzone-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </div>
+                            <div class="dropzone-label">Source Document</div>
+                            <div class="dropzone-hint">Click to browse or drag & drop — supports PDF & text files</div>
+                            <div class="dropzone-filename" id="filename-source"></div>
                         </div>
-                        <div class="form-group">
-                            <label>
-                                <span>Target Document Path</span>
-                            </label>
-                            <input type="text" id="plag-file2" value="sample2.txt">
+                        <div class="dropzone" id="dropzone-target">
+                            <input type="file" id="file-target" accept=".txt,.md,.text,.csv,.log,.py,.js,.cpp,.java,.c,.h,.html,.css,.pdf" hidden>
+                            <div class="dropzone-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </div>
+                            <div class="dropzone-label">Target Document</div>
+                            <div class="dropzone-hint">Click to browse or drag & drop — supports PDF & text files</div>
+                            <div class="dropzone-filename" id="filename-target"></div>
                         </div>
                     </div>
-                    <div class="actions">
-                        <button id="btn-plag" class="btn primary">Analyze Documents</button>
+                    <div class="actions" style="margin-top:1.75rem">
+                        <button id="btn-upload-analyze" class="btn primary" disabled>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Analyze Documents
+                        </button>
                     </div>
                 </div>
-                <div id="plag-results" class="results-area hidden"></div>
+
+                <!-- Text Paste Mode -->
+                <div id="text-mode" class="upload-mode">
+                    <div class="card">
+                        <div class="text-grid">
+                            <div class="form-group">
+                                <label><span>Source Text</span></label>
+                                <textarea id="paste-source" placeholder="Paste source reference document..." rows="8"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label><span>Target Text</span></label>
+                                <textarea id="paste-target" placeholder="Paste target content to compare..." rows="8"></textarea>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button id="btn-text-analyze" class="btn primary">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                Analyze Documents
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="upload-results" class="results-area hidden"></div>
             </section>
 
-            <!-- Compare View -->
+            <!-- Algorithm Compare View -->
             <section id="compare-view" class="view">
                 <header class="section-header">
-                    <h1>Algorithm Comparison</h1>
-                    <p>Benchmark Rabin-Karp overhead versus standard Naive bounds.</p>
+                    <h1>Benchmarks</h1>
+                    <p>Compare Rabin-Karp efficiency metrics against standard exhaustive search in real time.</p>
                 </header>
                 <div class="card">
                     <div class="form-group">
                         <label>
-                            <span>Target Corpus Text</span>
-                            <button type="button" class="btn-sample" data-target="comp-text" data-sample="comp-text" title="Insert Collision Demonstration">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Evaluation Corpus</span>
+                            <button type="button" class="btn-sample" data-target="comp-text" data-sample="comp-text">Load Demo</button>
                         </label>
-                        <textarea id="comp-text" placeholder="Enter repetitive collision string..."></textarea>
+                        <textarea id="comp-text" placeholder="Enter evaluation corpus..." rows="4"></textarea>
                     </div>
                     <div class="form-group">
                         <label>
-                            <span>Target Substring Pattern</span>
-                            <button type="button" class="btn-sample" data-target="comp-pattern" data-sample="comp-pattern" title="Insert Collision Pattern">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </button>
+                            <span>Target Pattern</span>
+                            <button type="button" class="btn-sample" data-target="comp-pattern" data-sample="comp-pattern">Load Demo Pattern</button>
                         </label>
-                        <input type="text" id="comp-pattern" placeholder="Keyword to benchmark...">
+                        <input type="text" id="comp-pattern" placeholder="Pattern to evaluate...">
                     </div>
                     <div class="actions">
-                        <button id="btn-compare" class="btn primary">Run Benchmark</button>
+                        <button id="btn-compare" class="btn primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Run Benchmark
+                        </button>
                     </div>
                 </div>
                 <div id="comp-results" class="results-area hidden"></div>
