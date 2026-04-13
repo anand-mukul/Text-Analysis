@@ -15,8 +15,8 @@ FROM node:18-slim
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci --production && npm cache clean --force
+COPY package.json package-lock.json* ./
+RUN npm install --production && npm cache clean --force
 
 # Copy application files
 COPY server.js ./
