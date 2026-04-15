@@ -446,7 +446,3 @@ The brute-force baseline compares the pattern at every position in the text char
 | Min word length | `file_handler.cpp` | 3   | Minimum word length for plagiarism check |
 
 ---
-
-## License
-
-This project was developed as an academic submission for the Data Structures and Algorithms course at Chandigarh University.

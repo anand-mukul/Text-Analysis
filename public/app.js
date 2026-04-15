@@ -99,11 +99,48 @@ function renderError(container, message) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // ===== Theme Management =====
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = themeToggle.querySelector('.sun-icon');
+    const moonIcon = themeToggle.querySelector('.moon-icon');
+
+    function setTheme(isLight) {
+        if (isLight) {
+            document.documentElement.classList.add('light-mode');
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+            themeToggle.setAttribute('title', 'Switch to dark mode');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.remove('light-mode');
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+            themeToggle.setAttribute('title', 'Switch to light mode');
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    // Init theme from localStorage or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    setTheme(savedTheme === 'light' || (!savedTheme && prefersLight));
+
+    themeToggle.addEventListener('click', () => {
+        const isCurrentlyLight = document.documentElement.classList.contains('light-mode');
+        setTheme(!isCurrentlyLight);
+    });
+
+    // Sync if system preference changes (e.g. OS switches dark/light)
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+        if (!localStorage.getItem('theme')) setTheme(e.matches);
+    });
+
     // ===== Navigation =====
     const navBtns = document.querySelectorAll('.nav-item');
     const sections = document.querySelectorAll('.view');
 
     navBtns.forEach(btn => {
+        if (btn.id === 'theme-toggle') return; // Skip theme toggle
         btn.addEventListener('click', () => {
             navBtns.forEach(b => b.classList.remove('active'));
             sections.forEach(s => s.classList.remove('active'));
@@ -198,19 +235,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== Health Check =====
     async function checkEngine() {
         const el = document.getElementById('engine-status');
+        const dot = el.querySelector('.status-dot');
+        const label = el.querySelector('span');
         try {
             const res = await fetch('/health');
             const data = await res.json();
             if (data.status === 'healthy' && data.engine === 'available') {
-                el.innerHTML = `<div class="status-dot"></div><span>Engine Online</span>`;
+                dot.classList.remove('offline');
+                label.textContent = 'Engine Online';
+                el.title = `Engine online · uptime ${Math.floor(data.uptime)}s · click for details`;
             } else {
-                el.innerHTML = `<div class="status-dot offline"></div><span>Engine Fault</span>`;
+                dot.classList.add('offline');
+                label.textContent = 'Engine Fault';
+                el.title = 'Engine binary missing — click for details';
             }
         } catch (e) {
-            el.innerHTML = `<div class="status-dot offline"></div><span>Offline</span>`;
+            dot.classList.add('offline');
+            label.textContent = 'Server Offline';
+            el.title = 'Cannot reach server';
         }
     }
     checkEngine();
+    // Re-poll every 30 seconds
+    setInterval(checkEngine, 30_000);
 
     // ===== Pattern Search =====
     document.getElementById('btn-search').addEventListener('click', async () => {
